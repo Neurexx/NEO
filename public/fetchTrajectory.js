@@ -31,17 +31,15 @@ function parseHorizonsData(data) {
     const startIdx = lines.findIndex(line => line.includes('$$SOE')) + 1;
     const endIdx = lines.findIndex(line => line.includes('$$EOE'));
     
-    const dates = [], x = [], y = [], z = [];
+    const dates = [], ra = [], dec = [];
     for (let i = startIdx; i < endIdx; i++) {
         const parts = lines[i].trim().split(/\s+/);
         dates.push(parts[0]);
-        x.push(parseFloat(parts[2]));
-        y.push(parseFloat(parts[3]));
-        z.push(parseFloat(parts[4]));
+        ra.push(parseFloat(parts[3]));  // Right Ascension in degrees
+        dec.push(parseFloat(parts[4])); // Declination in degrees
     }
     
-    console.log("Parsed data:", { dates, x, y, z });
-    return { dates, x, y, z };
+    return { dates, ra, dec };
 }
 
 function convertToCartesian(ra, dec) {
@@ -52,11 +50,17 @@ function convertToCartesian(ra, dec) {
 }
 
 async function getTrajectoryData() {
-    const data = await fetchHorizonsData('2023-01-01', '2023-06-01');
+    const data = await fetchHorizonsData('2023-01-01', '2023-06-1');
     if (data) {
-        const parsedData = parseHorizonsData(data);
-        console.log("Parsed trajectory data:", parsedData);
-        return parsedData;
+        const { dates, ra, dec } = parseHorizonsData(data);
+        const cartesianCoords = ra.map((_, i) => convertToCartesian(ra[i], dec[i]));
+        
+        return {
+            dates,
+            x: cartesianCoords.map(coord => coord.x),
+            y: cartesianCoords.map(coord => coord.y),
+            z: cartesianCoords.map(coord => coord.z)
+        };
     } else {
         console.error("Failed to fetch trajectory data");
         return null;
