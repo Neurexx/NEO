@@ -288,6 +288,66 @@ window.addEventListener('load', async function() {
     controls.target.copy(center);
     controls.update();
 
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    const infoDiv = document.getElementById('info');
+
+    // Add this line to create a style element
+    const style = document.createElement('style');
+
+    // Add this CSS to the style element
+    style.textContent = `
+        #info {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            font-family: Arial, sans-serif;
+            max-width: 250px;
+            display: none;
+        }
+        #info h3 {
+            margin: 0 0 10px 0;
+            font-size: 1.2em;
+            color: #4169E1;
+        }
+        #info p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        #info .label {
+            font-weight: bold;
+            color: #4169E1;
+        }
+    `;
+
+    // Append the style element to the document head
+    document.head.appendChild(style);
+
+    window.addEventListener('mousemove', (event) => {
+        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObject(neptune);
+
+        if (intersects.length > 0) {
+            infoDiv.style.display = 'block';
+            infoDiv.innerHTML = `
+                <h3>Neptune</h3>
+                <p><span class="label">Position:</span> Eighth planet from the Sun</p>
+                <p><span class="label">Diameter:</span> 49,244 km</p>
+                <p><span class="label">Day length:</span> ${neptuneControlsObj.dayLength.toFixed(2)} hours</p>
+                <p><span class="label">Rotation speed:</span> ${neptuneControlsObj.rotationSpeed.toFixed(4)}</p>
+            `;
+        } else {
+            infoDiv.style.display = 'none';
+        }
+    });
+
     function animate() {
         requestAnimationFrame(animate);
         
@@ -318,31 +378,6 @@ window.addEventListener('load', async function() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
-    });
-
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-    const infoDiv = document.getElementById('info');
-
-    window.addEventListener('mousemove', (event) => {
-        mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-        mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-        raycaster.setFromCamera(mouse, camera);
-        const intersects = raycaster.intersectObject(neptune);
-
-        if (intersects.length > 0) {
-            infoDiv.style.display = 'block';
-            infoDiv.innerHTML = `
-                <h3>Neptune</h3>
-                <p>Eighth planet from the Sun</p>
-                <p>Diameter: 49,244 km</p>
-                <p>Day length: ${neptuneControlsObj.dayLength.toFixed(2)} hours</p>
-                <p>Rotation speed: ${neptuneControlsObj.rotationSpeed.toFixed(4)}</p>
-            `;
-        } else {
-            infoDiv.style.display = 'none';
-        }
     });
 
     console.log("Setup complete");
