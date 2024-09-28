@@ -6,7 +6,7 @@ async function fetchHorizonsData(startTime, stopTime, stepSize = '1d') {
         'OBJ_DATA': 'YES',
         'MAKE_EPHEM': 'YES',
         'EPHEM_TYPE': 'OBSERVER',
-        'CENTER': '500@0',
+        'CENTER': '500@399',  // Changed to Earth-centered observer
         'START_TIME': startTime,
         'STOP_TIME': stopTime,
         'STEP_SIZE': stepSize,
@@ -35,22 +35,36 @@ function parseHorizonsData(data) {
     for (let i = startIdx; i < endIdx; i++) {
         const parts = lines[i].trim().split(/\s+/);
         dates.push(parts[0]);
-        ra.push(parseFloat(parts[3]));  // Right Ascension in degrees
-        dec.push(parseFloat(parts[4])); // Declination in degrees
+        ra.push(parts.slice(2, 5).join(' '));  // Preserve full precision
+        dec.push(parts.slice(5, 8).join(' ')); // Preserve full precision
     }
     
     return { dates, ra, dec };
 }
 
 function convertToCartesian(ra, dec) {
-    const x = Math.cos(dec * Math.PI / 180) * Math.cos(ra * Math.PI / 180);
-    const y = Math.cos(dec * Math.PI / 180) * Math.sin(ra * Math.PI / 180);
-    const z = Math.sin(dec * Math.PI / 180);
+    // Convert RA (HH MM SS.ff) to degrees
+    const [raH, raM, raS] = ra.split(' ').map(Number);
+    const raDeg = (raH + raM/60 + raS/3600) * 15;  // 15 degrees per hour
+
+    // Convert Dec (DD MM SS.f) to degrees
+    const [decD, decM, decS] = dec.split(' ').map(Number);
+    const decDeg = Math.sign(decD) * (Math.abs(decD) + decM/60 + decS/3600);
+
+    // Convert to radians
+    const raRad = raDeg * Math.PI / 180;
+    const decRad = decDeg * Math.PI / 180;
+
+    // Convert to Cartesian coordinates
+    const x = Math.cos(decRad) * Math.cos(raRad);
+    const y = Math.cos(decRad) * Math.sin(raRad);
+    const z = Math.sin(decRad);
+
     return { x, y, z };
 }
 
 async function getTrajectoryData() {
-    const data = await fetchHorizonsData('2023-01-01', '2023-06-1');
+    const data = await fetchHorizonsData('2024-01-01', '2025-01-20');
     if (data) {
         const { dates, ra, dec } = parseHorizonsData(data);
         const cartesianCoords = ra.map((_, i) => convertToCartesian(ra[i], dec[i]));
@@ -66,3 +80,34 @@ async function getTrajectoryData() {
         return null;
     }
 }
+
+// Example usage (you'll need to adapt this to your specific plotting library)
+async function plotTrajectory() {
+    const trajectoryData = await getTrajectoryData();
+    if (trajectoryData) {
+        // Use your preferred JavaScript plotting library here
+        // For example, if using Plotly.js:
+        /*
+        Plotly.newPlot('plotDiv', [{
+            type: 'scatter3d',
+            mode: 'lines',
+            x: trajectoryData.x,
+            y: trajectoryData.y,
+            z: trajectoryData.z,
+            line: {color: 'blue'}
+        }], {
+            title: "Asteroid 54481740 Trajectory (2006-01-01 to 2007-01-20)",
+            scene: {
+                xaxis: {title: 'X'},
+                yaxis: {title: 'Y'},
+                zaxis: {title: 'Z'}
+            }
+        });
+        */
+        console.log("Trajectory data ready for plotting:", trajectoryData);
+    } else {
+        console.error("Failed to plot trajectory data");
+    }
+}
+
+plotTrajectory();
