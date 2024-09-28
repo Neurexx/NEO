@@ -38,7 +38,7 @@ app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'neptune.html'));
 });
 
-const port = 3000;
+const port = 3001;
 app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
 });

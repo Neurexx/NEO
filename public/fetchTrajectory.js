@@ -1,8 +1,8 @@
-async function fetchHorizonsData(startTime, stopTime, stepSize = '1d') {
+async function fetchHorizonsData(des,startTime, stopTime, stepSize = '1d') {
     const url = "/api/horizons";
     const params = new URLSearchParams({
         'format': 'json',
-        'COMMAND': "'DES=54481740;'",
+        'COMMAND': `'DES=${des};'`,
         'OBJ_DATA': 'YES',
         'MAKE_EPHEM': 'YES',
         'EPHEM_TYPE': 'OBSERVER',
@@ -19,6 +19,7 @@ async function fetchHorizonsData(startTime, stopTime, stepSize = '1d') {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
+       
         return data;
     } catch (error) {
         console.error("Failed to fetch data from Horizons API:", error);
@@ -38,6 +39,8 @@ function parseHorizonsData(data) {
         ra.push(parts.slice(2, 5).join(' '));  // Preserve full precision
         dec.push(parts.slice(5, 8).join(' ')); // Preserve full precision
     }
+
+    
     
     return { dates, ra, dec };
 }
@@ -63,51 +66,51 @@ function convertToCartesian(ra, dec) {
     return { x, y, z };
 }
 
-async function getTrajectoryData() {
-    const data = await fetchHorizonsData('2024-01-01', '2025-01-20');
+async function getTrajectoryDataForDES(des, startTime, stopTime) {
+    const data = await fetchHorizonsData(des, startTime, stopTime);
     if (data) {
         const { dates, ra, dec } = parseHorizonsData(data);
         const cartesianCoords = ra.map((_, i) => convertToCartesian(ra[i], dec[i]));
         
         return {
+            des,
             dates,
             x: cartesianCoords.map(coord => coord.x),
             y: cartesianCoords.map(coord => coord.y),
             z: cartesianCoords.map(coord => coord.z)
         };
     } else {
-        console.error("Failed to fetch trajectory data");
+        console.error(`Failed to fetch trajectory data for DES ${des}`);
         return null;
     }
 }
-
 // Example usage (you'll need to adapt this to your specific plotting library)
-async function plotTrajectory() {
-    const trajectoryData = await getTrajectoryData();
-    if (trajectoryData) {
-        // Use your preferred JavaScript plotting library here
-        // For example, if using Plotly.js:
-        /*
-        Plotly.newPlot('plotDiv', [{
-            type: 'scatter3d',
-            mode: 'lines',
-            x: trajectoryData.x,
-            y: trajectoryData.y,
-            z: trajectoryData.z,
-            line: {color: 'blue'}
-        }], {
-            title: "Asteroid 54481740 Trajectory (2006-01-01 to 2007-01-20)",
-            scene: {
-                xaxis: {title: 'X'},
-                yaxis: {title: 'Y'},
-                zaxis: {title: 'Z'}
-            }
-        });
-        */
-        console.log("Trajectory data ready for plotting:", trajectoryData);
-    } else {
-        console.error("Failed to plot trajectory data");
-    }
-}
+// async function plotTrajectory() {
+//     const trajectoryData = await getTrajectoryData();
+//     if (trajectoryData) {
+//         // Use your preferred JavaScript plotting library here
+//         // For example, if using Plotly.js:
+//         /*
+//         Plotly.newPlot('plotDiv', [{
+//             type: 'scatter3d',
+//             mode: 'lines',
+//             x: trajectoryData.x,
+//             y: trajectoryData.y,
+//             z: trajectoryData.z,
+//             line: {color: 'blue'}
+//         }], {
+//             title: "Asteroid 54481740 Trajectory (2006-01-01 to 2007-01-20)",
+//             scene: {
+//                 xaxis: {title: 'X'},
+//                 yaxis: {title: 'Y'},
+//                 zaxis: {title: 'Z'}
+//             }
+//         });
+//         */
+//         console.log("Trajectory data ready for plotting:", trajectoryData);
+//     } else {
+//         console.error("Failed to plot trajectory data");
+//     }
+// }
 
-plotTrajectory();
+// plotTrajectory();
